@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The 9-Card Lineup Game</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --panel-bg: #1e293b;
+            --card-back: #334155;
+            --card-front: #ffffff;
+            --accent-gold: #f59e0b;
+            --accent-red: #ef4444;
+            --text-light: #f8fafc;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 { color: var(--accent-gold); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px; }
+        .log-panel { background: var(--panel-bg); width: 100%; max-width: 900px; padding: 15px; border-radius: 8px; margin-bottom: 20px; height: 100px; overflow-y: auto; font-family: monospace; border: 1px solid #475569; }
+        .controls { margin-bottom: 25px; display: flex; gap: 15px; }
+        button { background: var(--accent-gold); border: none; padding: 12px 24px; font-weight: bold; border-radius: 6px; cursor: pointer; color: #000; transition: transform 0.1s; }
+        button:hover { transform: scale(1.05); }
+
+        /* Table Layout Grid */
+        .game-table {
+            display: grid;
+            grid-template-rows: repeat(3, auto);
+            gap: 20px;
+            background: #111827;
+            padding: 30px;
+            border-radius: 16px;
+            border: 2px solid var(--accent-gold);
+            width: 100%;
+            max-width: 1100px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .row { display: grid; grid-template-columns: repeat(9, 1fr); gap: 12px; justify-items: center; align-items: center; }
+        .middle-divider { border-left: 2px dashed rgba(245, 158, 11, 0.3); height: 100%; grid-column: 5; }
+
+        /* Card CSS styling */
+        .card-slot {
+            width: 85px;
+            height: 125px;
+            border-radius: 8px;
+            border: 2px dashed #475569;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            font-weight: bold;
+            font-size: 1.2rem;
+            user-select: none;
+        }
+
+        .card-slot.active { border-color: var(--accent-gold); box-shadow: 0 0 12px var(--accent-gold); }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            background-color: var(--card-back);
+            color: transparent;
+            transition: all 0.2s ease;
+        }
+
+        .card.face-up { background-color: var(--card-front); color: #000; border: 1px solid #cbd5e1; }
+        .card.peeked { background-color: #f1f5f9; color: #64748b; border: 2px solid var(--accent-gold); }
+        .card.red-suit { color: var(--accent-red); }
+        .card.joker-card { background-color: #4c1d95 !important; color: #fff !important; }
+
+        .label { font-size: 0.7rem; color: #94a3b8; position: absolute; bottom: -18px; width: 100%; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <h1>The 9-Card Lineup</h1>
+    <div class="controls">
+        <button onclick="GameEngine.initGame()">Reset/Start New Match</button>
+        <button id="actionBtn" onclick="GameEngine.executeAction()" style="display:none;"></button>
+    </div>
+
+    <div class="log-panel" id="combatLog">Welcome. Press "Reset/Start New Match" to shuffle the deck and deal the lines.</div>
+
+    <div class="game-table">
+        <!-- Row 1: Player A Peek Cards (Slots 0-3 correspond to Runway 1-4) -->
+        <div class="row" id="rowPeekA"></div>
+
+        <!-- Row 2: Shared Runway Track (9 Horizontal Cards) -->
+        <div class="row" id="rowMainTrack"></div>
+
+        <!-- Row 3: Player B Peek Cards (Slots 5-8 correspond to Runway 6-9) -->
+        <div class="row" id="rowPeekB"></div>
+    </div>
+
+<script>
+/**
+ * -----------------------------------------------------------------------------
+ * THE 9-CARD LINEUP - CORE RULES ARCHITECTURE SCRIPT
+ * -----------------------------------------------------------------------------
+ */
+const GameEngine = {
+    deck: [],
+    runway: Array(9).fill(null), // Indices 0-3 (P1), Index 4 (Middle), Indices 5-8 (P2)
+    peekA: Array(4).fill(null),   // Placed vertically above runway 0-3
+    peekB: Array(4).fill(null),   // Placed vertically below runway 5-8
+    
+    posA: 0,  // Player A starts on index 0 (Card 1)
+    posB: 8,  // Player B starts on index 8 (Card 9)
+    
+    gameState: 'SETUP', // SETUP, P1_TURN, P2_TURN, RESOLVING, GAME_OVER
+    activ
